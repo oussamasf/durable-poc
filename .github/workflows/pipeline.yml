@@ -1,0 +1,174 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "template.yaml"
+      - "samconfig.toml"
+      - "package.json"
+      - "package-lock.json"
+      - "Makefile"
+      - ".samignore"
+      - "scripts/**"
+      - ".github/workflows/**"
+  push:
+    branches: [main, stage]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "template.yaml"
+      - "samconfig.toml"
+      - "package.json"
+      - "package-lock.json"
+      - "Makefile"
+      - ".samignore"
+      - "scripts/**"
+      - ".github/workflows/**"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "22"
+  AWS_REGION: eu-west-2
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+  template-lint:
+    name: Lint template
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup SAM CLI
+        uses: aws-actions/setup-sam@v2
+
+      - name: Validate template
+        run: sam validate --lint --template template.yaml
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Test
+        run: npm run test:ci
+
+  build:
+    name: SAM build
+    runs-on: ubuntu-latest
+    needs: [lint, template-lint, test]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Setup SAM CLI
+        uses: aws-actions/setup-sam@v2
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: sam build
+
+  deploy-prod:
+    name: Deploy (prod)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Setup SAM CLI
+        uses: aws-actions/setup-sam@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: sam build
+
+      - name: Deploy
+        run: sam deploy --config-env prod --no-confirm-changeset --no-fail-on-empty-changeset
+
+  deploy-stage:
+    name: Deploy (stage)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/stage' && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Setup SAM CLI
+        uses: aws-actions/setup-sam@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: sam build
+
+      - name: Deploy
+        run: sam deploy --config-env stage --no-confirm-changeset --no-fail-on-empty-changeset

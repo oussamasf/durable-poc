@@ -1,0 +1,95 @@
+# ==============================================================================
+# CLOUDFORMATION TEMPLATE: log-stream-processor
+# ==============================================================================
+# Description: Temporal durable Lambda with minimal IAM role and X-Ray tracing
+# ==============================================================================
+
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Temporal durable function SAM stack
+
+# ------------------------------------------------------------------------------
+# GLOBALS
+# ------------------------------------------------------------------------------
+Globals:
+  Function:
+    Runtime: nodejs24.x
+    Timeout: 10
+    Tracing: Active
+
+# ------------------------------------------------------------------------------
+# RESOURCES
+# ------------------------------------------------------------------------------
+Resources:
+  TemporalExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::StackName}-temporal-execution-role
+      Tags:
+        - Key: application
+          Value: platform
+
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicDurableExecutionRolePolicy
+      Policies:
+        - PolicyName: lambda-logs-and-tracing
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:*
+              - Effect: Allow
+                Action:
+                  - xray:PutTraceSegments
+                  - xray:PutTelemetryRecords
+                Resource: "*"
+        - PolicyName: sqs-send-email-service
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                Resource: !Sub arn:${AWS::Partition}:sqs:${AWS::Region}:${AWS::AccountId}:emails-service*
+
+
+  TemporalFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-temporal
+      Handler: index.handler
+      CodeUri: .
+      Role: !GetAtt TemporalExecutionRole.Arn
+      Architectures:
+        - arm64
+      Tags:
+        application: platform
+      Timeout: 900
+      AutoPublishAlias: live
+      DurableConfig:
+        ExecutionTimeout: 3600
+        RetentionPeriodInDays: 7
+    Metadata:
+      BuildMethod: makefile
+
+# ------------------------------------------------------------------------------
+# OUTPUTS
+# ------------------------------------------------------------------------------
+Outputs:
+  TemporalFunctionArn:
+    Description: Temporal function ARN
+    Value: !GetAtt TemporalFunction.Arn
+  TemporalExecutionRoleArn:
+    Description: IAM execution role ARN for TemporalFunction
+    Value: !GetAtt TemporalExecutionRole.Arn

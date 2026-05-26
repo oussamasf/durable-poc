@@ -1,0 +1,5 @@
+.cursor/**
+.git/**
+.aws-sam/**
+node_modules/**
+tests/**

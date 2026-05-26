@@ -1,0 +1,20 @@
+.aws-sam/
+node_modules/
+src/**/index.js
+.env.*
+.env
+
+# Docker volumes (local bind mounts if used)
+data/
+volumes/
+.docker/
+
+# Coverage
+coverage/
+
+# Storybook build output
+**/storybook-static/
+
+.envrc
+
+.durable-executions-local/
