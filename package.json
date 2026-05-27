@@ -1,5 +1,5 @@
 {
-  "name": "log-stream-processor",
+  "name": "temporal",
   "private": true,
   "workspaces": [
     "src/*"
