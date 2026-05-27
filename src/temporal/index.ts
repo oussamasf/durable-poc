@@ -2,18 +2,29 @@ import {
   withDurableExecution,
   type DurableContext,
 } from "@aws/durable-execution-sdk-js";
+import { traceAsync } from "../shared/trace";
 
 export const handler = withDurableExecution(
   async (event: unknown, context: DurableContext) => {
-    const logged = await context.step("log-event", async () => {
-      const payload = JSON.stringify(event);
-      context.logger.info("durable-stack", { payload });
-      return payload;
-    }, {
-      retryStrategy: (error, attempt) => ({
-        shouldRetry: attempt < 3,
-        delay: { seconds: Math.pow(2, attempt) },
-      }),
+    const logged = await traceAsync("log-event", async (subsegment) => {
+      const result = await context.step("log-event", async () => {
+        const payload = JSON.stringify(event);
+        context.logger.info("durable-stack", { payload });
+        return payload;
+      }, {
+        retryStrategy: (error, attempt) => ({
+          shouldRetry: attempt < 3,
+          delay: { seconds: Math.pow(2, attempt) },
+        }),
+      });
+
+      if (subsegment) {
+        const annotation =
+          result.length > 64 ? `${result.slice(0, 61)}...` : result;
+        subsegment.addAnnotation("logged", annotation);
+      }
+
+      return result;
     });
 
     return { ok: true, logged };

@@ -9,7 +9,8 @@
     "format:check": "prettier . --check --config ../../.prettierrc --ignore-path ../../.prettierignore"
   },
   "dependencies": {
-    "@aws/durable-execution-sdk-js": "^1.1.5"
+    "@aws/durable-execution-sdk-js": "^1.1.5",
+    "@temporal/shared": "1.0.0"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.145",
