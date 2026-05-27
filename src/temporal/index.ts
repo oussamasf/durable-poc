@@ -27,6 +27,18 @@ export const handler = withDurableExecution(
       return result;
     });
 
-    return { ok: true, logged };
+    const random = await traceAsync("random-number", async (subsegment) => {
+      const result = await context.step("random-number", async () => {
+        const value = Math.floor(Math.random() * 1_000_000);
+        context.logger.info("durable-stack", { random: value });
+        return value;
+      });
+
+      subsegment?.addAnnotation("random", result);
+
+      return result;
+    });
+
+    return { ok: true, logged, random };
   },
 );
