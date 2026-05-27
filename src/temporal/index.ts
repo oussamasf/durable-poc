@@ -39,6 +39,14 @@ export const handler = withDurableExecution(
       return result;
     });
 
+    await traceAsync("raise-error", async (subsegment) => {
+      subsegment?.addAnnotation("raises", true);
+
+      await context.step("raise-error", async () => {
+        throw new Error("Intentional failure from raise-error step");
+      });
+    });
+
     return { ok: true, logged, random };
   },
 );
