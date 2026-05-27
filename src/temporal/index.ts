@@ -4,7 +4,12 @@ import {
   createRetryStrategy,
   StepConfig,
 } from "@aws/durable-execution-sdk-js";
+import { SendMessageCommand, SQSClient } from "@aws-sdk/client-sqs";
 import { traceAsync } from "../shared/trace";
+
+const QUEUE_URL = process.env.PROCESSING_QUEUE_URL;
+
+export const sqsClient = new SQSClient({});
 
 
 const retryStepConfig: StepConfig<string> = {
@@ -16,12 +21,12 @@ const retryStepConfig: StepConfig<string> = {
   }),
 };
 
-const stepConfig: StepConfig<string> = {
-  retryStrategy: createRetryStrategy({
-    retryableErrorTypes: [],
-    retryableErrors: [],
-  }),
-};
+// const stepConfig: StepConfig<string> = {
+//   retryStrategy: createRetryStrategy({
+//     retryableErrorTypes: [],
+//     retryableErrors: [],
+//   }),
+// };
 
 
 export const handler = withDurableExecution(
@@ -56,18 +61,45 @@ export const handler = withDurableExecution(
       return result;
     });
 
-    await traceAsync("raise-error", async (subsegment) => {
-      subsegment?.addAnnotation("raises", true);
+    // await traceAsync("raise-error", async (subsegment) => {
+    //   subsegment?.addAnnotation("raises", true);
 
-      await context.step(
-        "raise-error",
-        async () => {
-          throw new Error("Intentional failure from raise-error step");
-        },
-        stepConfig,
+    //   await context.step(
+    //     "raise-error",
+    //     async () => {
+    //       throw new Error("Intentional failure from raise-error step");
+    //     },
+    //     stepConfig,
+    //   );
+    // });
+
+    const submitToFifo = async (callbackId: string) => {
+      if (!QUEUE_URL) {
+        throw new Error("PROCESSING_QUEUE_URL is not set");
+      }
+
+      const payload =
+        typeof event === "object" &&
+        event !== null &&
+        "data" in event
+          ? (event as { data: unknown }).data
+          : event;
+
+      await sqsClient.send(
+        new SendMessageCommand({
+          QueueUrl: QUEUE_URL,
+          MessageBody: JSON.stringify({ callbackId, payload }),
+          MessageGroupId: "DurableProcessingGroup",
+        }),
       );
-    });
+    };
 
-    return { ok: true, logged, random };
+    const result = await context.waitForCallback(
+      "AwaitWorkerCallback",
+      submitToFifo,
+      { timeout: { seconds: 30 } },
+    );
+
+    return { ok: true, logged, random, result };
   },
 );

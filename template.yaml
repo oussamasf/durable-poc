@@ -62,7 +62,28 @@ Resources:
                 Action:
                   - sqs:SendMessage
                 Resource: !Sub arn:${AWS::Partition}:sqs:${AWS::Region}:${AWS::AccountId}:emails-service*
+        - PolicyName: sqs-processing-queue
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                  - sqs:ChangeMessageVisibility
+                Resource: !GetAtt ProcessingQueue.Arn
 
+  ProcessingQueue:
+    Type: AWS::SQS::Queue
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      MessageRetentionPeriod: 3600
+      QueueName: !Sub "${AWS::StackName}-tasks.fifo"
+      FifoQueue: true
+      ContentBasedDeduplication: true
 
   TemporalFunction:
     Type: AWS::Serverless::Function
@@ -76,6 +97,9 @@ Resources:
       Tags:
         application: platform
       Timeout: 900
+      Environment:
+        Variables:
+          PROCESSING_QUEUE_URL: !Ref ProcessingQueue
       AutoPublishAlias: live
       DurableConfig:
         ExecutionTimeout: 3600
@@ -93,3 +117,6 @@ Outputs:
   TemporalExecutionRoleArn:
     Description: IAM execution role ARN for TemporalFunction
     Value: !GetAtt TemporalExecutionRole.Arn
+  ProcessingQueueUrl:
+    Description: Processing queue URL
+    Value: !GetAtt ProcessingQueue.QueueUrl

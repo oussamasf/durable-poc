@@ -9,6 +9,7 @@
     "format:check": "prettier . --check --config ../../.prettierrc --ignore-path ../../.prettierignore"
   },
   "dependencies": {
+    "@aws-sdk/client-sqs": "^3.1055.0",
     "@aws/durable-execution-sdk-js": "^1.1.5",
     "@temporal/shared": "1.0.0"
   },
