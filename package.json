@@ -1,0 +1,35 @@
+{
+  "name": "temporal",
+  "private": true,
+  "workspaces": [
+    "src/*"
+  ],
+  "scripts": {
+    "lint": "eslint 'src/**/*.ts'",
+    "lint:fix": "eslint 'src/**/*.ts' --fix",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand --passWithNoTests",
+    "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
+    "test:ci": "NODE_OPTIONS=--experimental-vm-modules jest --ci --runInBand --passWithNoTests",
+    "test:renderer": "NODE_OPTIONS=--experimental-vm-modules jest tests/renderer --runInBand",
+    "test:daily-telemetry": "NODE_OPTIONS=--experimental-vm-modules jest tests/daily-telemetry --runInBand",
+    "test:daily-digest": "NODE_OPTIONS=--experimental-vm-modules jest tests/daily-digest --runInBand",
+    "test:email-sender": "NODE_OPTIONS=--experimental-vm-modules jest tests/email-sender --runInBand",
+    "test:watch:renderer": "NODE_OPTIONS=--experimental-vm-modules jest tests/renderer --watch",
+    "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage --runInBand",
+    "storybook": "npm run storybook -w renderer"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/jest": "^30.0.0",
+    "esbuild": "^0.28.0",
+    "eslint": "^10.3.0",
+    "globals": "^17.5.0",
+    "jest": "^30.4.2",
+    "prettier": "^3.8.3",
+    "ts-jest": "^29.4.9",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.59.3"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "orderId": "test-123",
+  "attendeeId": "user-456",
+  "orderDetails": {
+    "drinkType": "Latte",
+    "size": "Grande"
+  }
+}

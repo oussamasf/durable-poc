@@ -1,0 +1,19 @@
+{
+  "name": "@durable-poc/temporal",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "npx esbuild index.ts --bundle --platform=node --target=node24 --outfile=index.js --format=cjs --conditions=require",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier . --write --config ../../.prettierrc --ignore-path ../../.prettierignore",
+    "format:check": "prettier . --check --config ../../.prettierrc --ignore-path ../../.prettierignore"
+  },
+  "dependencies": {
+    "@aws/durable-execution-sdk-js": "^1.1.5"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.145",
+    "@types/node": "^25.7.0",
+    "esbuild": "^0.25.0"
+  }
+}

@@ -1,0 +1,41 @@
+version = 0.1
+
+[default.global.parameters]
+region = "eu-west-2"
+
+[default.build.parameters]
+cached = true
+parallel = true
+
+[default.validate.parameters]
+lint = true
+
+[default.deploy.parameters]
+stack_name = "durable-stack"
+resolve_s3 = true
+s3_prefix = "durable-stack"
+capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
+confirm_changeset = false
+
+[default.package.parameters]
+resolve_s3 = true
+
+[stage.global.parameters]
+region = "eu-west-2"
+
+[stage.deploy.parameters]
+stack_name = "durable-stack-stage"
+resolve_s3 = true
+s3_prefix = "durable-stack"
+capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
+confirm_changeset = false
+
+[prod.global.parameters]
+region = "eu-west-2"
+
+[prod.deploy.parameters]
+stack_name = "durable-stack-prod"
+resolve_s3 = true
+s3_prefix = "durable-stack"
+capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
+confirm_changeset = false
