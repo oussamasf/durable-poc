@@ -7,14 +7,21 @@ import {
 import { traceAsync } from "../shared/trace";
 
 
-const retryStrategy = createRetryStrategy({
-  maxAttempts: 5,
-  initialDelay: { seconds: 2 },
-  maxDelay: { minutes: 1 },
-  backoffRate: 2,
-});
+const retryStepConfig: StepConfig<string> = {
+  retryStrategy: createRetryStrategy({
+    maxAttempts: 5,
+    initialDelay: { seconds: 2 },
+    maxDelay: { minutes: 1 },
+    backoffRate: 2,
+  }),
+};
 
-const stepConfig: StepConfig<string> = { retryStrategy };
+const stepConfig: StepConfig<string> = {
+  retryStrategy: createRetryStrategy({
+    retryableErrorTypes: [],
+    retryableErrors: [],
+  }),
+};
 
 
 export const handler = withDurableExecution(
@@ -25,7 +32,7 @@ export const handler = withDurableExecution(
         context.logger.info("durable-stack", { payload });
         return payload;
       }, 
-      stepConfig,
+      retryStepConfig,
       );
 
       if (subsegment) {
@@ -52,11 +59,13 @@ export const handler = withDurableExecution(
     await traceAsync("raise-error", async (subsegment) => {
       subsegment?.addAnnotation("raises", true);
 
-      await context.step("raise-error", 
+      await context.step(
+        "raise-error",
         async () => {
-        throw new Error("Intentional failure from raise-error step");
-      },
-      stepConfig);
+          throw new Error("Intentional failure from raise-error step");
+        },
+        stepConfig,
+      );
     });
 
     return { ok: true, logged, random };
