@@ -1,8 +1,21 @@
 import {
   withDurableExecution,
   type DurableContext,
+  createRetryStrategy,
+  StepConfig,
 } from "@aws/durable-execution-sdk-js";
 import { traceAsync } from "../shared/trace";
+
+
+const retryStrategy = createRetryStrategy({
+  maxAttempts: 5,
+  initialDelay: { seconds: 2 },
+  maxDelay: { minutes: 1 },
+  backoffRate: 2,
+});
+
+const stepConfig: StepConfig<string> = { retryStrategy };
+
 
 export const handler = withDurableExecution(
   async (event: unknown, context: DurableContext) => {
@@ -11,12 +24,9 @@ export const handler = withDurableExecution(
         const payload = JSON.stringify(event);
         context.logger.info("durable-stack", { payload });
         return payload;
-      }, {
-        retryStrategy: (error, attempt) => ({
-          shouldRetry: attempt < 3,
-          delay: { seconds: Math.pow(2, attempt) },
-        }),
-      });
+      }, 
+      stepConfig,
+      );
 
       if (subsegment) {
         const annotation =
@@ -42,9 +52,11 @@ export const handler = withDurableExecution(
     await traceAsync("raise-error", async (subsegment) => {
       subsegment?.addAnnotation("raises", true);
 
-      await context.step("raise-error", async () => {
+      await context.step("raise-error", 
+        async () => {
         throw new Error("Intentional failure from raise-error step");
-      });
+      },
+      stepConfig);
     });
 
     return { ok: true, logged, random };
