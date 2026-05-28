@@ -4,7 +4,7 @@
 # Description: Temporal durable Lambda with minimal IAM role and X-Ray tracing
 # ==============================================================================
 
-AWSTemplateFormatVersion: "2010-09-09"
+AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: Temporal durable function SAM stack
 
@@ -30,7 +30,7 @@ Resources:
           Value: platform
 
       AssumeRolePolicyDocument:
-        Version: "2012-10-17"
+        Version: '2012-10-17'
         Statement:
           - Effect: Allow
             Principal:
@@ -41,7 +41,7 @@ Resources:
       Policies:
         - PolicyName: lambda-logs-and-tracing
           PolicyDocument:
-            Version: "2012-10-17"
+            Version: '2012-10-17'
             Statement:
               - Effect: Allow
                 Action:
@@ -53,10 +53,10 @@ Resources:
                 Action:
                   - xray:PutTraceSegments
                   - xray:PutTelemetryRecords
-                Resource: "*"
+                Resource: '*'
         - PolicyName: sqs-send-email-service
           PolicyDocument:
-            Version: "2012-10-17"
+            Version: '2012-10-17'
             Statement:
               - Effect: Allow
                 Action:
@@ -64,7 +64,7 @@ Resources:
                 Resource: !Sub arn:${AWS::Partition}:sqs:${AWS::Region}:${AWS::AccountId}:emails-service*
         - PolicyName: sqs-processing-queue
           PolicyDocument:
-            Version: "2012-10-17"
+            Version: '2012-10-17'
             Statement:
               - Effect: Allow
                 Action:
@@ -76,13 +76,13 @@ Resources:
                 Resource: !GetAtt ProcessingQueue.Arn
         - PolicyName: durable-callback
           PolicyDocument:
-            Version: "2012-10-17"
+            Version: '2012-10-17'
             Statement:
               - Effect: Allow
                 Action:
                   - lambda:SendDurableExecutionCallbackSuccess
                   - lambda:SendDurableExecutionCallbackFailure
-                Resource: "*"
+                Resource: '*'
 
   ProcessingQueue:
     Type: AWS::SQS::Queue
@@ -91,7 +91,7 @@ Resources:
     Properties:
       MessageRetentionPeriod: 3600
       VisibilityTimeout: 60
-      QueueName: !Sub "${AWS::StackName}-tasks.fifo"
+      QueueName: !Sub ${AWS::StackName}-tasks.fifo
       FifoQueue: true
       ContentBasedDeduplication: true
 
@@ -152,7 +152,8 @@ Outputs:
     Description: Temporal function ARN
     Value: !GetAtt TemporalFunction.Arn
   TemporalExecutionRoleArn:
-    Description: IAM execution role ARN shared by TemporalFunction and CallbackWorkerFunction
+    Description: IAM execution role ARN shared by TemporalFunction and
+      CallbackWorkerFunction
     Value: !GetAtt TemporalExecutionRole.Arn
   ProcessingQueueUrl:
     Description: Processing queue URL
