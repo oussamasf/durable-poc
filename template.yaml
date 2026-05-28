@@ -69,6 +69,10 @@ Resources:
               - Effect: Allow
                 Action:
                   - sqs:SendMessage
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                  - sqs:ChangeMessageVisibility
                 Resource: !GetAtt ProcessingQueue.Arn
         - PolicyName: durable-callback
           PolicyDocument:
