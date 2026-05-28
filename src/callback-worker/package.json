@@ -1,0 +1,22 @@
+{
+  "name": "@durable-poc/callback-worker",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "npx esbuild index.ts --bundle --platform=node --target=node24 --outfile=index.js --format=cjs --conditions=require",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier . --write --config ../../.prettierrc --ignore-path ../../.prettierignore",
+    "format:check": "prettier . --check --config ../../.prettierrc --ignore-path ../../.prettierignore"
+  },
+  "dependencies": {
+    "@aws-lambda-powertools/batch": "^2.33.0",
+    "@aws-lambda-powertools/logger": "^2.33.0",
+    "@aws-sdk/client-lambda": "^3.1055.0",
+    "@temporal/shared": "1.0.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.145",
+    "@types/node": "^25.7.0",
+    "esbuild": "^0.25.0"
+  }
+}

@@ -69,11 +69,16 @@ Resources:
               - Effect: Allow
                 Action:
                   - sqs:SendMessage
-                  - sqs:ReceiveMessage
-                  - sqs:DeleteMessage
-                  - sqs:GetQueueAttributes
-                  - sqs:ChangeMessageVisibility
                 Resource: !GetAtt ProcessingQueue.Arn
+        - PolicyName: durable-callback
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:SendDurableExecutionCallbackSuccess
+                  - lambda:SendDurableExecutionCallbackFailure
+                Resource: "*"
 
   ProcessingQueue:
     Type: AWS::SQS::Queue
@@ -81,6 +86,7 @@ Resources:
     UpdateReplacePolicy: Delete
     Properties:
       MessageRetentionPeriod: 3600
+      VisibilityTimeout: 60
       QueueName: !Sub "${AWS::StackName}-tasks.fifo"
       FifoQueue: true
       ContentBasedDeduplication: true
@@ -107,6 +113,33 @@ Resources:
     Metadata:
       BuildMethod: makefile
 
+  CallbackWorkerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-callback-worker
+      Handler: index.handler
+      CodeUri: .
+      Role: !GetAtt TemporalExecutionRole.Arn
+      Architectures:
+        - arm64
+      Tags:
+        application: platform
+      Timeout: 60
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: callback-worker
+          POWERTOOLS_LOG_LEVEL: INFO
+      Events:
+        ProcessingQueueEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt ProcessingQueue.Arn
+            BatchSize: 1
+            FunctionResponseTypes:
+              - ReportBatchItemFailures
+    Metadata:
+      BuildMethod: makefile
+
 # ------------------------------------------------------------------------------
 # OUTPUTS
 # ------------------------------------------------------------------------------
@@ -115,8 +148,14 @@ Outputs:
     Description: Temporal function ARN
     Value: !GetAtt TemporalFunction.Arn
   TemporalExecutionRoleArn:
-    Description: IAM execution role ARN for TemporalFunction
+    Description: IAM execution role ARN shared by TemporalFunction and CallbackWorkerFunction
     Value: !GetAtt TemporalExecutionRole.Arn
   ProcessingQueueUrl:
     Description: Processing queue URL
     Value: !GetAtt ProcessingQueue.QueueUrl
+  CallbackWorkerFunctionArn:
+    Description: Callback worker function ARN
+    Value: !GetAtt CallbackWorkerFunction.Arn
+  CallbackWorkerFunctionName:
+    Description: Callback worker function name
+    Value: !Ref CallbackWorkerFunction
