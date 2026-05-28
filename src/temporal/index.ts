@@ -97,7 +97,7 @@ export const handler = withDurableExecution(
     const result = await context.waitForCallback(
       "AwaitWorkerCallback",
       submitToFifo,
-      { timeout: { seconds: 30 } },
+      { timeout: { seconds: 300 } },
     );
 
     return { ok: true, logged, random, result };
