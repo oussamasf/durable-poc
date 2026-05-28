@@ -25,6 +25,8 @@ const recordHandler = async (record: SQSRecord): Promise<void> => {
 
       logger.info("Processing payload", { callbackId, payload });
 
+      await new Promise(r => setTimeout(r, 15000));
+
       const processedResult = {
         success: true,
         timestamp: new Date().toISOString(),
